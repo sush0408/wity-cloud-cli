@@ -1,0 +1,207 @@
+# Kubernetes and Helm sensitive files
+*.kubeconfig
+kubeconfig*
+rke2.yaml
+/etc/rancher/rke2/rke2.yaml
+*.key
+*.crt
+*.pem
+*.p12
+*.pfx
+
+# Secrets and credentials
+secrets/
+*secret*
+*password*
+*token*
+.env
+.env.*
+credentials.yaml
+auth.yaml
+
+# Helm charts and temporary files
+charts/
+*.tgz
+*.tar.gz
+requirements.lock
+Chart.lock
+
+# Terraform files (if used)
+*.tfstate
+*.tfstate.*
+.terraform/
+*.tfvars
+terraform.tfplan
+
+# Logs and debugging output
+*.log
+logs/
+debug/
+*.debug
+crash.log
+
+# Temporary and cache files
+tmp/
+temp/
+.tmp/
+*.tmp
+*.cache
+.cache/
+*.swp
+*.swo
+*~
+
+# IDE and editor files
+.vscode/
+.idea/
+*.iml
+.project
+.classpath
+.settings/
+*.sublime-*
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# Backup files
+*.bak
+*.backup
+*.old
+*~
+
+# Generated documentation
+docs/build/
+site/
+
+# Node.js (if any frontend components)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Python (if any Python scripts)
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+
+# Docker
+.dockerignore
+Dockerfile.bak
+
+# Monitoring and metrics data
+prometheus-data/
+grafana-data/
+loki-data/
+alertmanager-data/
+
+# Database dumps and data
+*.sql
+*.dump
+*.db
+data/
+pgdata/
+
+# SSL/TLS certificates (except examples)
+ssl/
+tls/
+certs/
+*.csr
+
+# Rancher specific
+rancher-data/
+cattle-data/
+
+# Local configuration overrides
+local.yaml
+local-*.yaml
+override.yaml
+override-*.yaml
+custom.yaml
+custom-*.yaml
+
+# Test outputs and reports
+test-results/
+coverage/
+*.coverage
+junit.xml
+
+# Compiled binaries
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Archives
+*.zip
+*.rar
+*.7z
+
+# Large files that shouldn't be in git
+*.iso
+*.img
+*.vmdk
+
+# Kubernetes generated files
+kustomization.yaml.bak
+*.generated.yaml
+
+# Helm values overrides
+values-*.yaml
+!values-example.yaml
+
+# Local development files
+.local/
+local/
+dev/
+development/
+
+# CI/CD specific files (keep templates, ignore runs)
+.github/workflows/runs/
+.gitlab-ci-local/
+jenkins-data/
+
+# Package manager files
+package-lock.json
+yarn.lock
+Pipfile.lock
+
+# Jupyter notebooks checkpoints
+.ipynb_checkpoints/
+
+# AWS credentials
+.aws/credentials
+.aws/config
+
+# Azure credentials
+.azure/
+
+# Google Cloud credentials
+.gcloud/
+service-account.json
+gcp-*.json
+
+# Ansible
+*.retry
+.ansible/
+
+# Vagrant
+.vagrant/
+
+# Local scripts that might contain sensitive data
+local-*.sh
+private-*.sh
+*-local.sh
+*-private.sh 

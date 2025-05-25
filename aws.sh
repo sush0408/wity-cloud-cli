@@ -10,14 +10,63 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
   fi
 fi
 
+# Function to ask for approval (if not already defined)
+if ! declare -f ask_approval > /dev/null; then
+  ask_approval() {
+    local message=$1
+    if [[ "${BATCH_MODE:-false}" == "true" ]]; then
+      echo -e "${BLUE}$message${NC} - Auto-approved (batch mode)"
+      return 0
+    fi
+    echo -e "${BLUE}$message${NC} (y/n)"
+    read -r approval
+    if [[ ! $approval =~ ^[Yy]$ ]]; then
+      echo "Skipping this step..."
+      return 1
+    fi
+    return 0
+  }
+fi
+
 function setup_aws_cli() {
   section "Setting up AWS CLI and credentials"
 
+  # Check and install dependencies
+  echo -e "${YELLOW}Checking and installing dependencies...${NC}"
+  
+  # Update package list
+  apt-get update
+  
+  # Install required packages
+  apt-get install -y unzip curl
+  
+  # Check if AWS CLI is already installed
+  if command -v aws &> /dev/null; then
+    echo -e "${YELLOW}AWS CLI is already installed. Version:${NC}"
+    aws --version
+    if ask_approval "Do you want to reinstall AWS CLI?"; then
+      echo "Proceeding with reinstallation..."
+    else
+      echo "Skipping AWS CLI installation."
+      return 0
+    fi
+  fi
+
   # Install AWS CLI v2
+  echo -e "${YELLOW}Downloading and installing AWS CLI v2...${NC}"
   curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
   unzip -q awscliv2.zip
-  sudo ./aws/install
+  sudo ./aws/install --update
   rm -rf awscliv2.zip aws
+
+  # Verify installation
+  if command -v aws &> /dev/null; then
+    echo -e "${GREEN}AWS CLI installed successfully. Version:${NC}"
+    aws --version
+  else
+    echo -e "${RED}AWS CLI installation failed${NC}"
+    return 1
+  fi
 
   echo -e "${YELLOW}Enter your AWS credentials to configure CLI access:${NC}"
   read -p "AWS Access Key ID: " aws_access_key_id
@@ -40,6 +89,14 @@ EOF
 
   echo -e "${GREEN}AWS CLI is now configured.${NC}"
   echo -e "${YELLOW}You can now access S3, Route 53, and ECR services from this node.${NC}"
+  
+  # Test AWS CLI configuration
+  echo -e "${YELLOW}Testing AWS CLI configuration...${NC}"
+  if aws sts get-caller-identity &> /dev/null; then
+    echo -e "${GREEN}AWS CLI configuration test successful${NC}"
+  else
+    echo -e "${RED}AWS CLI configuration test failed. Please check your credentials.${NC}"
+  fi
 }
 
 function create_s3_bucket_for_velero() {

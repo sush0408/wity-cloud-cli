@@ -1,0 +1,118 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pmm-data
+  namespace: monitoring
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: local-path
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: pmm-secrets
+  namespace: monitoring
+type: Opaque
+data:
+  PMM_ADMIN_PASSWORD: YWRtaW4tcGFzc3dvcmQ=  # admin-password
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pmm-server
+  namespace: monitoring
+  labels:
+    app: pmm-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pmm-server
+  template:
+    metadata:
+      labels:
+        app: pmm-server
+    spec:
+      containers:
+      - name: pmm-server
+        image: percona/pmm-server:2
+        ports:
+        - containerPort: 80
+          name: http
+        - containerPort: 443
+          name: https
+        env:
+        - name: PMM_ADMIN_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: pmm-secrets
+              key: PMM_ADMIN_PASSWORD
+        volumeMounts:
+        - name: pmm-data
+          mountPath: /srv
+        readinessProbe:
+          httpGet:
+            path: /ping
+            port: 80
+          initialDelaySeconds: 30
+          timeoutSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /ping
+            port: 80
+          initialDelaySeconds: 60
+          timeoutSeconds: 5
+        resources:
+          requests:
+            cpu: 500m
+            memory: 1Gi
+          limits:
+            cpu: 2000m
+            memory: 4Gi
+      volumes:
+      - name: pmm-data
+        persistentVolumeClaim:
+          claimName: pmm-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pmm-server
+  namespace: monitoring
+  labels:
+    app: pmm-server
+spec:
+  ports:
+  - port: 80
+    targetPort: 80
+    name: http
+  - port: 443
+    targetPort: 443
+    name: https
+  selector:
+    app: pmm-server
+  type: ClusterIP
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: pmm-ingress
+  namespace: monitoring
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  rules:
+  - host: pmm.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: pmm-server
+            port:
+              number: 80
