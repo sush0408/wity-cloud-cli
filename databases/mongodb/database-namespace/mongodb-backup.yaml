@@ -1,0 +1,8 @@
+apiVersion: psmdb.percona.com/v1
+kind: PerconaServerMongoDBBackup
+metadata:
+  name: manual-backup-20250525-201933
+  namespace: database
+spec:
+  clusterName: psmdb
+  storageName: local-backup

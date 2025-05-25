@@ -303,7 +303,7 @@ function uninstall_component() {
     helm uninstall my-mongo -n database || true
     helm uninstall my-postgres -n database || true
     helm uninstall my-mysql -n database || true
-    helm uninstall my-redis -n database || true
+    helm uninstall redis -n database || true
     helm uninstall my-mariadb -n database || true
     helm uninstall traefik -n traefik || true
     kubectl delete ns longhorn-system monitoring loki cattle-system cert-manager database traefik pgadmin kubevirt || true
@@ -311,6 +311,30 @@ function uninstall_component() {
   else
     echo "Aborted."
   fi
+}
+
+function cleanup_database_namespace() {
+  section "Cleaning up Database namespace"
+  
+  # Uninstall Redis
+  helm uninstall redis -n database || true
+  
+  # Remove MongoDB cluster
+  kubectl delete psmdb psmdb -n database || true
+  
+  # Remove MongoDB operator
+  kubectl delete deployment percona-server-mongodb-operator -n database || true
+  
+  # Remove secrets
+  kubectl delete secret psmdb-secrets -n database || true
+  
+  # Remove PVCs
+  kubectl delete pvc --all -n database || true
+  
+  # Remove namespace
+  kubectl delete namespace database || true
+  
+  echo -e "${GREEN}Database namespace cleanup completed${NC}"
 }
 
 # Only run if script is called directly (not sourced)
@@ -327,6 +351,7 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     "Debug Namespace"
     "View Pod Logs"
     "Uninstall Components"
+    "Cleanup Database Namespace"
     "Quit"
   )
   
@@ -358,6 +383,9 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
         ;;
       "Uninstall Components")
         uninstall_component
+        ;;
+      "Cleanup Database Namespace")
+        cleanup_database_namespace
         ;;
       "Quit")
         break

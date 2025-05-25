@@ -14,106 +14,74 @@ spec:
     users: psmdb-secrets
   replsets:
     - name: rs0
-      size: 3
+      size: 1
       affinity:
         antiAffinityTopologyKey: "none"
       podDisruptionBudget:
         maxUnavailable: 1
       volumeSpec:
         persistentVolumeClaim:
-          storageClassName: local-path
+          storageClassName: longhorn
           resources:
             requests:
               storage: 3Gi
-      sidecarVolumes:
-        - name: backup-volume
-          persistentVolumeClaim:
-            claimName: backup-pvc
       resources:
         requests:
-          cpu: 500m
-          memory: 1G
-        limits:
           cpu: 1000m
           memory: 2G
+        limits:
+          cpu: 2000m
+          memory: 4G
     - name: rs1
-      size: 3
+      size: 1
       affinity:
         antiAffinityTopologyKey: "none"
       podDisruptionBudget:
         maxUnavailable: 1
       volumeSpec:
         persistentVolumeClaim:
-          storageClassName: local-path
+          storageClassName: longhorn
           resources:
             requests:
               storage: 3Gi
-      sidecarVolumes:
-        - name: backup-volume
-          persistentVolumeClaim:
-            claimName: backup-pvc
       resources:
         requests:
-          cpu: 500m
-          memory: 1G
-        limits:
           cpu: 1000m
           memory: 2G
+        limits:
+          cpu: 2000m
+          memory: 4G
 
   sharding:
     enabled: true
     configsvrReplSet:
-      size: 3
+      size: 2
       affinity:
         antiAffinityTopologyKey: "none"
       podDisruptionBudget:
         maxUnavailable: 1
       volumeSpec:
         persistentVolumeClaim:
-          storageClassName: local-path
+          storageClassName: longhorn
           resources:
             requests:
               storage: 1Gi
-      sidecarVolumes:
-        - name: backup-volume
-          persistentVolumeClaim:
-            claimName: backup-pvc
       resources:
         requests:
-          cpu: 250m
-          memory: 512M
-        limits:
           cpu: 500m
           memory: 1G
+        limits:
+          cpu: 1000m
+          memory: 2G
 
     mongos:
-      size: 2
+      size: 1
       affinity:
         antiAffinityTopologyKey: "none"
       resources:
         requests:
-          cpu: 500m
-          memory: 512M
-        limits:
           cpu: 1000m
           memory: 1G
-
-  backup:
-    enabled: true
-    image: percona/percona-backup-mongodb:2.0.3
-    serviceAccountName: percona-server-mongodb-operator
-    volumeMounts:
-      - name: backup-volume
-        mountPath: /backups
-    storages:
-      local-backup:
-        type: filesystem
-        filesystem:
-          path: /backups
-    tasks:
-      - name: daily-backup
-        enabled: true
-        schedule: "0 0 * * *"
-        storageName: local-backup
-        compressionType: gzip
-        compressionLevel: 3
+        limits:
+          cpu: 2000m
+          memory: 2G

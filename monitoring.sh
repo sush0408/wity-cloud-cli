@@ -53,6 +53,14 @@ function install_monitoring() {
     echo -e "${YELLOW}Setting up Grafana ingress for external access...${NC}"
     setup_grafana_ingress
     
+    # Check if Loki is installed and configure it as a datasource
+    if kubectl get namespace loki &>/dev/null && kubectl get service loki -n loki &>/dev/null; then
+      echo -e "${YELLOW}Loki detected - configuring as Grafana datasource...${NC}"
+      configure_loki_datasource
+    else
+      echo -e "${YELLOW}Loki not found. Install Loki first, then run 'configure_loki_datasource' to add it to Grafana.${NC}"
+    fi
+    
     echo -e "${YELLOW}Access Grafana through Rancher or by setting up ingress rules${NC}"
     echo -e "${YELLOW}Default Grafana credentials: admin/prom-operator${NC}"
     
@@ -104,6 +112,14 @@ function install_loki() {
     echo -e "${YELLOW}Setting up Loki ingress for external access...${NC}"
     setup_loki_ingress
     
+    # Check if Grafana is installed and configure Loki as a datasource
+    if kubectl get namespace monitoring &>/dev/null && kubectl get service kube-prometheus-stack-grafana -n monitoring &>/dev/null; then
+      echo -e "${YELLOW}Grafana detected - configuring Loki as datasource...${NC}"
+      configure_loki_datasource
+    else
+      echo -e "${YELLOW}Grafana not found. Install Grafana first, then run 'configure_loki_datasource' to add Loki.${NC}"
+    fi
+    
     echo -e "${YELLOW}Configure Grafana to use Loki as a data source to view logs${NC}"
     echo -e "${YELLOW}Loki endpoint: http://loki.loki.svc.cluster.local:3100${NC}"
     
@@ -114,6 +130,108 @@ function install_loki() {
     echo -e "${RED}Failed to install Loki stack${NC}"
     return 1
   fi
+}
+
+function configure_loki_datasource() {
+  section "Configuring Loki as Grafana Datasource"
+  
+  # Check if both Grafana and Loki are available
+  if ! kubectl get service kube-prometheus-stack-grafana -n monitoring &>/dev/null; then
+    echo -e "${RED}Grafana service not found in monitoring namespace${NC}"
+    return 1
+  fi
+  
+  if ! kubectl get service loki -n loki &>/dev/null; then
+    echo -e "${RED}Loki service not found in loki namespace${NC}"
+    return 1
+  fi
+  
+  echo -e "${YELLOW}Creating Loki datasource configuration...${NC}"
+  
+  # Create a ConfigMap for Loki datasource
+  cat <<EOF | kubectl apply -f -
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-loki-datasource
+  namespace: monitoring
+  labels:
+    grafana_datasource: "1"
+    app.kubernetes.io/instance: kube-prometheus-stack
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/part-of: kube-prometheus-stack
+data:
+  loki-datasource.yaml: |-
+    apiVersion: 1
+    datasources:
+    - name: Loki
+      type: loki
+      uid: loki
+      url: http://loki.loki.svc.cluster.local:3100
+      access: proxy
+      isDefault: false
+      jsonData:
+        maxLines: 1000
+        timeout: 60s
+        httpMethod: GET
+        manageAlerts: false
+        alertmanagerUid: alertmanager
+      editable: true
+EOF
+  
+  if [[ $? -eq 0 ]]; then
+    echo -e "${GREEN}Loki datasource ConfigMap created successfully${NC}"
+    
+    # Restart Grafana to pick up the new datasource
+    echo -e "${YELLOW}Restarting Grafana to load Loki datasource...${NC}"
+    kubectl rollout restart deployment kube-prometheus-stack-grafana -n monitoring
+    
+    # Wait for Grafana to be ready
+    echo -e "${YELLOW}Waiting for Grafana to restart...${NC}"
+    kubectl rollout status deployment kube-prometheus-stack-grafana -n monitoring --timeout=120s
+    
+    if [[ $? -eq 0 ]]; then
+      echo -e "${GREEN}✅ Loki datasource configured successfully in Grafana!${NC}"
+      echo -e "${YELLOW}📋 Datasource Details:${NC}"
+      echo -e "  - Name: Loki"
+      echo -e "  - Type: loki"
+      echo -e "  - URL: http://loki.loki.svc.cluster.local:3100"
+      echo -e "  - Max Lines: 1000"
+      echo -e "  - Timeout: 60s"
+      echo ""
+      echo -e "${YELLOW}🔍 How to use Loki in Grafana:${NC}"
+      echo -e "  1. Go to Grafana → Explore"
+      echo -e "  2. Select 'Loki' from the datasource dropdown"
+      echo -e "  3. Try these LogQL queries:"
+      echo -e "     • {job=~\".+\"} - All logs"
+      echo -e "     • {namespace=\"monitoring\"} - Monitoring namespace logs"
+      echo -e "     • {job=\"pgadmin/pgadmin\"} - PgAdmin logs"
+      echo -e "     • {job=~\".+\"} |= \"error\" - Error logs"
+      echo ""
+      echo -e "${YELLOW}⚠️  Note: Health check may show errors (this is normal)${NC}"
+      echo -e "  The error 'parse error: unexpected IDENTIFIER' is a known Grafana issue"
+      echo -e "  with Loki health checks. It doesn't affect functionality."
+    else
+      echo -e "${RED}Failed to restart Grafana${NC}"
+      return 1
+    fi
+  else
+    echo -e "${RED}Failed to create Loki datasource ConfigMap${NC}"
+    return 1
+  fi
+}
+
+function remove_loki_datasource() {
+  section "Removing Loki Datasource from Grafana"
+  
+  echo -e "${YELLOW}Removing Loki datasource ConfigMap...${NC}"
+  kubectl delete configmap grafana-loki-datasource -n monitoring --ignore-not-found=true
+  
+  echo -e "${YELLOW}Restarting Grafana to remove Loki datasource...${NC}"
+  kubectl rollout restart deployment kube-prometheus-stack-grafana -n monitoring
+  kubectl rollout status deployment kube-prometheus-stack-grafana -n monitoring --timeout=120s
+  
+  echo -e "${GREEN}Loki datasource removed from Grafana${NC}"
 }
 
 function setup_grafana_ingress() {
@@ -384,9 +502,74 @@ function check_monitoring_status() {
   echo -e "\n${YELLOW}Loki namespace pods:${NC}"
   kubectl get pods -n loki 2>/dev/null || echo "Loki not installed"
   
+  echo -e "\n${YELLOW}Loki services:${NC}"
+  kubectl get svc -n loki 2>/dev/null || echo "Loki not installed"
+  
   echo -e "\n${YELLOW}Persistent Volume Claims:${NC}"
   kubectl get pvc -n monitoring
   kubectl get pvc -n loki 2>/dev/null || echo "No Loki PVCs"
+  
+  echo -e "\n${YELLOW}Grafana Datasources Configuration:${NC}"
+  if kubectl get configmap -n monitoring | grep -q "grafana.*datasource"; then
+    echo "Found Grafana datasource ConfigMaps:"
+    kubectl get configmap -n monitoring | grep "grafana.*datasource"
+    
+    # Check if Loki datasource is configured
+    if kubectl get configmap grafana-loki-datasource -n monitoring &>/dev/null; then
+      echo -e "${GREEN}✅ Loki datasource is configured${NC}"
+    else
+      echo -e "${YELLOW}⚠️  Loki datasource not configured${NC}"
+      echo -e "   Run: ./monitoring.sh and select 'Configure Loki Datasource in Grafana'"
+    fi
+  else
+    echo "No Grafana datasource ConfigMaps found"
+  fi
+  
+  echo -e "\n${YELLOW}Ingress Status:${NC}"
+  kubectl get ingress -n monitoring 2>/dev/null || echo "No ingresses in monitoring namespace"
+  kubectl get ingress -n loki 2>/dev/null || echo "No ingresses in loki namespace"
+  
+  # Test Loki connectivity if available
+  if kubectl get service loki -n loki &>/dev/null; then
+    echo -e "\n${YELLOW}Testing Loki connectivity:${NC}"
+    
+    # Test internal connectivity
+    LOKI_POD=$(kubectl get pods -n loki -l app=loki --no-headers | head -1 | awk '{print $1}')
+    if [[ -n "$LOKI_POD" ]]; then
+      echo -n "  Internal API test: "
+      if kubectl exec -n loki "$LOKI_POD" -- wget -q -O- http://localhost:3100/ready 2>/dev/null | grep -q "ready"; then
+        echo -e "${GREEN}✅ Ready${NC}"
+      else
+        echo -e "${RED}❌ Failed${NC}"
+      fi
+    fi
+    
+    # Test external connectivity if ingress exists
+    if kubectl get ingress loki-ingress -n loki &>/dev/null; then
+      NODE_IP=$(hostname -I | awk '{print $1}')
+      echo -n "  External API test: "
+      if curl -s --connect-timeout 5 "http://loki.${NODE_IP}.nip.io/ready" 2>/dev/null | grep -q "ready"; then
+        echo -e "${GREEN}✅ Ready${NC}"
+      else
+        echo -e "${RED}❌ Failed${NC}"
+      fi
+    fi
+  fi
+  
+  echo -e "\n${YELLOW}Quick Access URLs:${NC}"
+  NODE_IP=$(hostname -I | awk '{print $1}')
+  echo -e "  Grafana:    http://grafana.${NODE_IP}.nip.io (admin/prom-operator)"
+  echo -e "  Prometheus: http://prometheus.${NODE_IP}.nip.io"
+  if kubectl get service loki -n loki &>/dev/null; then
+    echo -e "  Loki:       http://loki.${NODE_IP}.nip.io"
+  fi
+  
+  echo -e "\n${YELLOW}Troubleshooting Tips:${NC}"
+  echo -e "  • If Loki health check shows errors in Grafana, this is normal"
+  echo -e "  • Use LogQL queries like: {job=~\".+\"} or {namespace=\"monitoring\"}"
+  echo -e "  • Avoid empty-compatible matchers like {job=~\".*\"}"
+  echo -e "  • Check logs: kubectl logs -n loki -l app=loki"
+  echo -e "  • Check Promtail: kubectl logs -n loki -l app=promtail"
 }
 
 function install_pmm_server() {
@@ -438,7 +621,7 @@ spec:
   resources:
     requests:
       storage: 10Gi
-  storageClassName: local-path
+  storageClassName: longhorn
 ---
 apiVersion: v1
 kind: Secret
@@ -614,6 +797,8 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
   options=(
     "Prometheus + Grafana" 
     "Loki + Promtail" 
+    "Configure Loki Datasource in Grafana"
+    "Remove Loki Datasource from Grafana"
     "Setup Grafana Ingress"
     "Setup Prometheus Ingress"
     "Setup Loki Ingress"
@@ -631,6 +816,12 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
         ;;
       "Loki + Promtail")
         install_loki
+        ;;
+      "Configure Loki Datasource in Grafana")
+        configure_loki_datasource
+        ;;
+      "Remove Loki Datasource from Grafana")
+        remove_loki_datasource
         ;;
       "Setup Grafana Ingress")
         setup_grafana_ingress
