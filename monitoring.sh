@@ -298,7 +298,7 @@ function setup_grafana_ingress() {
     echo -e "${YELLOW}Creating new Grafana ingress with dual domain support...${NC}"
     
     # Create ingress with both domains from the start
-    cat <<EOF | kubectl apply -f -
+  cat <<EOF | kubectl apply -f -
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -332,7 +332,7 @@ spec:
 EOF
     echo -e "${GREEN}Grafana ingress created with dual domain support${NC}"
   fi
-  
+
   echo -e "${YELLOW}Grafana Access URLs:${NC}"
   echo -e "  - Local:  http://grafana.${NODE_IP}.nip.io"
   echo -e "  - Public: http://grafana.dev.tese.io (requires Route53 setup)"
@@ -380,7 +380,7 @@ function setup_prometheus_ingress() {
     fi
   else
     # Create ingress with both domains
-    cat <<EOF | kubectl apply -f -
+  cat <<EOF | kubectl apply -f -
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:

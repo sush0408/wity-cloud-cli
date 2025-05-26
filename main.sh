@@ -4,7 +4,7 @@
 # This script coordinates the deployment of the complete infrastructure stack
 
 # Source common functions
-source "./common.sh"
+  source "./common.sh"
 
 # Global configuration
 BATCH_MODE=${BATCH_MODE:-false}
@@ -33,9 +33,9 @@ function check_prerequisites() {
   # Check if running as root
   if [[ $EUID -ne 0 ]]; then
     echo -e "${RED}This script must be run as root${NC}"
-    exit 1
-  fi
-  
+  exit 1
+fi
+
   # Check system resources
   local total_memory=$(free -m | awk 'NR==2{printf "%.0f", $2/1024}')
   local total_cpu=$(nproc)

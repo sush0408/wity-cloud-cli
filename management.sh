@@ -263,7 +263,7 @@ spec:
             port:
               number: 80
 EOF
-
+  
   echo -e "${GREEN}pgAdmin ingress created with dual domain support${NC}"
   echo -e "${YELLOW}pgAdmin Access URLs:${NC}"
   echo -e "  - Local:  http://pgadmin.${NODE_IP}.nip.io"

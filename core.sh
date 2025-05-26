@@ -129,7 +129,7 @@ EOF
   
   # Verify installation
   if kubectl get nodes &>/dev/null; then
-    echo -e "${GREEN}RKE2 server installed successfully${NC}"
+  echo -e "${GREEN}RKE2 server installed successfully${NC}"
     kubectl get nodes
   else
     echo -e "${RED}RKE2 installation may have issues - kubectl cannot connect${NC}"
@@ -368,7 +368,7 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
         if helm list -n kube-system | grep -q "rke2-cilium" && kubectl get pods -n kube-system -l k8s-app=cilium | grep -q "Running"; then
           echo -e "${GREEN}RKE2's Cilium is already running properly. Skipping Helm Cilium installation.${NC}"
         else
-          install_cilium
+        install_cilium
         fi
         
         install_metallb
