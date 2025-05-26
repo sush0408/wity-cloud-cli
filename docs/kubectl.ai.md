@@ -1,3 +1,0 @@
-
-export OPENAI_API_KEY=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
-kubectl-ai --llm-provider=openai --model=gpt-4.1
