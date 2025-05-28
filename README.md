@@ -12,26 +12,6 @@ Wity Cloud CLI is purpose-built for:
 * **Multi-namespace service readiness checks, logs, health reports, and TLS automation**
 * Full support for **RKE2**, **Longhorn**, **Traefik**, **Cilium**, **Rancher**, and **KubeVirt**
 
-## 🌍 About Wityliti
-
-**[Wityliti Automation & Solutions Pvt. Ltd.](https://wityliti.io)** is a forward-thinking, AI-first technology company specializing in:
-
-### Our Four Core Pillars
-
-1. **Internet of Things (IoT)**
-   * Smart devices, edge intelligence, remote sensing
-
-2. **Cyber Security**
-   * AI-enhanced threat detection, zero-trust architectures
-
-3. **Enterprise SaaS Development**
-   * Scalable platforms for sustainability, ESG, and productivity
-
-4. **Climate Tech Solutions**
-   * Carbon tracking, energy optimization, circularity engineering
-
-We fuse artificial intelligence at every layer of the stack to create technology that is smarter, more secure, and sustainable by design.
-
 ## 🎯 Key Features
 
 - **🚀 One-Command Deployment**: Complete stack deployment with single commands
@@ -43,6 +23,7 @@ We fuse artificial intelligence at every layer of the stack to create technology
 - **🛠️ Intelligent Troubleshooting**: Automated diagnostics and conflict resolution
 - **🤖 AI-Powered**: kubectl-ai integration for intelligent cluster management
 - **📚 Comprehensive Documentation**: Detailed guides and troubleshooting resources
+- **🔒 HTTPS Automation**: Automated Let's Encrypt certificates for all services
 
 ## 🚀 Quick Start
 

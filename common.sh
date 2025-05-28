@@ -14,6 +14,22 @@ function section() {
   echo -e "\n${YELLOW}==> $1${NC}"
 }
 
+# Function to ask for approval (supports batch mode)
+function ask_approval() {
+  local message=$1
+  if [[ "${BATCH_MODE:-false}" == "true" ]]; then
+    echo -e "${BLUE}$message${NC} - Auto-approved (batch mode)"
+    return 0
+  fi
+  echo -e "${BLUE}$message${NC} (y/n)"
+  read -r approval
+  if [[ ! $approval =~ ^[Yy]$ ]]; then
+    echo "Skipping this step..."
+    return 1
+  fi
+  return 0
+}
+
 # Setup environment for RKE2
 function setup_k8s_env() {
   # Add RKE2 binaries to PATH
