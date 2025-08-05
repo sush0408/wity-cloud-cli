@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: synapse-proxy
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      app: synapse-proxy
+  template:
+    metadata:
+      labels:
+        app: synapse-proxy
+    spec:
+      hostNetwork: true
+      containers:
+      - name: nginx-proxy
+        image: nginx:alpine
+        ports:
+        - containerPort: 8008
+        volumeMounts:
+        - name: nginx-config
+          mountPath: /etc/nginx/conf.d/
+      volumes:
+      - name: nginx-config
+        configMap:
+          name: synapse-proxy-config
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: synapse-proxy-config
+  namespace: default
+data:
+  default.conf: |
+    server {
+        listen 8008;
+        server_name _;
+        
+        location / {
+            proxy_pass http://localhost:8001;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+    }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: synapse-external
+  namespace: default
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8008
+    targetPort: 8008
+    protocol: TCP
+  selector:
+    app: synapse-proxy 

@@ -4,7 +4,7 @@
 # This script coordinates the deployment of the complete infrastructure stack
 
 # Source common functions
-source "./common.sh"
+  source "./common.sh"
 
 # Global configuration
 BATCH_MODE=${BATCH_MODE:-false}
@@ -45,8 +45,8 @@ function check_prerequisites() {
   # Check if running as root
   if [[ $EUID -ne 0 ]]; then
     echo -e "${RED}This script must be run as root${NC}"
-    exit 1
-  fi
+  exit 1
+fi
 
   # Check system resources
   local total_memory=$(free -m | awk 'NR==2{printf "%.0f", $2/1024}')
@@ -200,9 +200,9 @@ function fix_ingress_https_configuration() {
       echo -e "${GREEN}✅ Updated ${ingress_name} for HTTPS${NC}"
     else
       echo -e "${YELLOW}⚠️  Ingress ${ingress_name} not found in namespace ${namespace}${NC}"
-    fi
-  done
-  
+  fi
+done
+
   # Wait a moment for ingress changes to be processed
   echo -e "${YELLOW}Waiting for ingress changes to be processed...${NC}"
   sleep 10

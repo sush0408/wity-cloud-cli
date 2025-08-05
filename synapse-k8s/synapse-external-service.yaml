@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: synapse-external
+  namespace: default
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8008
+    targetPort: 8008
+    protocol: TCP
+---
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: synapse-external
+  namespace: default
+subsets:
+- addresses:
+  - ip: 172.18.0.3  # Direct container IP
+  ports:
+  - port: 8008
+    protocol: TCP 

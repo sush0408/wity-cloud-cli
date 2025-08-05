@@ -1,0 +1,159 @@
+main:
+  config:
+    #
+    # Automatic approach: These become environment variables
+    # (e.g. DB_TYPE, DB_POSTGRESDB_HOST, N8N_ENCRYPTION_KEY, etc.)
+    #
+    db:
+      type: postgresdb
+      postgresdb:
+        host: pgdb-postgresql.database.svc.cluster.local
+        port: 5432
+        database: n8n_db
+        user: postgres
+        password: tesePostgresPassword
+        schema: public
+
+    n8n:
+      encryption_key: "IbPcm6M3bnr3SzSZcOK2MfqlaZJUrQXk"
+      enforce_settings_file_permissions: "true"
+      webhook_tunnel_url: "https://n8n.tese.io"
+      webhook_url: "https://n8n.tese.io"
+      protocol: "https"
+      host: "n8n.tese.io"
+      # port: "443"
+      path: "/"
+      editor_base_url: "https://n8n.tese.io"
+      
+      # Admin User Configuration
+      default_user_email: "admin@example.com"
+      default_user_password: "securePassword123"
+      default_user_firstname: "Admin"
+      default_user_lastname: "User"
+      
+      # - Multi-user / user-management
+      user_management_disabled: "false"             # "false" => multi-user mode
+
+      # - Public API
+      public_api_disabled: "false"                  # enable public API
+      public_api_endpoint: "api"                    # serve it at /api
+      public_api_swaggerui_disabled: "false"        # show the Swagger UI
+
+      # - Telemetry (diagnostics)
+      diagnostics_enabled: "true"                   # share anonymous telemetry
+      # diagnostics_config_frontend: "..."
+      # diagnostics_config_backend:  "..."
+
+      # - Version notifications
+      version_notifications_enabled: "true"
+      version_notifications_endpoint: "https://api.n8n.io/versions/"
+      version_notifications_info_url: "https://docs.n8n.io/getting-started/installation/updating.html"
+
+      # - Additional user personalization
+      personalization_enabled: "true"
+      # Hiring banner
+      hiring_banner_enabled: "false"
+
+    #
+    # extraEnv approach: Duplicate the same env variables for clarity or overrides
+    #
+    env:
+      DB_TYPE: "postgresdb"
+      DB_POSTGRESDB_HOST: "pgdb-postgresql.database.svc.cluster.local"
+      DB_POSTGRESDB_PORT: "5432"
+      DB_POSTGRESDB_DATABASE: "n8n_db"
+      DB_POSTGRESDB_USER: "postgres"
+      DB_POSTGRESDB_PASSWORD: "tesePostgresPassword"
+      DB_POSTGRESDB_SCHEMA: "public"
+      
+    extraEnv:
+      
+      # Admin User Configuration
+      - name: N8N_DEFAULT_USER_EMAIL
+        value: "sushil@tese.io"
+      - name: N8N_DEFAULT_USER_PASSWORD
+        value: "securePassword123"
+      - name: N8N_DEFAULT_USER_FIRSTNAME
+        value: "Admin"
+      - name: N8N_DEFAULT_USER_LASTNAME
+        value: "User"
+
+      # Encryption Key
+      - name: N8N_ENCRYPTION_KEY
+        value: "IbPcm6M3bnr3SzSZcOK2MfqlaZJUrQXk"
+
+      # Domain & Webhook
+      - name: WEBHOOK_TUNNEL_URL
+        value: "https://n8n.tese.io"
+      - name: WEBHOOK_URL
+        value: "https://n8n.tese.io"
+      - name: N8N_PROTOCOL
+        value: "https"
+      - name: N8N_HOST
+        value: "n8n.tese.io"
+      - name: N8N_PORT
+        value: "443"
+      - name: N8N_PATH
+        value: "/"
+      - name: EDITOR_BASE_URL
+        value: "https://n8n.tese.io"
+
+      # Additional
+      - name: N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS
+        value: "true"
+      - name: NODE_FUNCTION_ALLOW_BUILTIN
+        value: "*"
+
+  #
+  # Database credentials in a K8s Secret
+  #
+  secret:
+    database:
+      postgresdb:
+        user: postgres
+        password: "tesePostgresPassword"
+
+replicaCount: 1
+
+image:
+  repository: n8nio/n8n
+  tag: 1.90.0
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 80
+
+ingress:
+  enabled: false
+
+persistence:
+  enabled: true
+  size: 1Gi
+  storageClass: "gp2"
+
+# resources:
+#   requests:
+#     cpu: 500m
+#     memory: 512Mi
+#   limits:
+#     cpu: 2
+#     memory: 2Gi
+
+# If you want n8n to run on HTTP port 5678 inside the container
+# (the usual default), keep the probes as is:
+livenessProbe:
+  httpGet:
+    path: /healthz
+    port: http
+  initialDelaySeconds: 10
+  timeoutSeconds: 2
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /healthz
+    port: http
+  initialDelaySeconds: 10
+  timeoutSeconds: 2
+  failureThreshold: 3

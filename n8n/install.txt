@@ -1,0 +1,14 @@
+ helm install -f n8n.yaml n8n oci://8gears.container-registry.com/library/n8n --namespace n8n
+Pulled: 8gears.container-registry.com/library/n8n:0.25.2
+Digest: sha256:1e2e695dd5754dfe3e7067fde35b0c905e33103d05128d9c3ef17f01c31fd4f6
+NAME: n8n
+LAST DEPLOYED: Mon Jan 20 16:26:50 2025
+NAMESPACE: n8n
+STATUS: deployed
+REVISION: 1
+NOTES:
+1. Get the application URL by running these commands:
+  export POD_NAME=$(kubectl get pods --namespace n8n -l "app.kubernetes.io/name=n8n,app.kubernetes.io/instance=n8n" -o jsonpath="{.items[0].metadata.name}")
+  export CONTAINER_PORT=$(kubectl get pod --namespace n8n $POD_NAME -o jsonpath="{.spec.containers[0].ports[0].containerPort}")
+  echo "Visit http://127.0.0.1:8080 to use your application"
+  kubectl --namespace n8n port-forward $POD_NAME 8080:$CONTAINER_PORT
